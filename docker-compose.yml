@@ -17,6 +17,16 @@ services:
       - 9000:9000
       - 9001:9001
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    environment:
+      - discovery.type=single-node
+      - ELASTICSEARCH_USERNAME=azerty
+      - ELASTICSEARCH_PASSWORD=azerty
+    ports:
+      - 9200:9200
+
+
   rabbitmq-to-minio:
     build:
       context: .
