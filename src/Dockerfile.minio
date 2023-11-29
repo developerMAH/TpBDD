@@ -1,0 +1,16 @@
+FROM python:3.8
+
+WORKDIR /app
+
+# Copier le script Python
+COPY ./src/1_rabbit_to_minio.py /app/
+
+
+# Installer les dépendances
+RUN pip3 install minio pika
+
+
+# Définir la commande à exécuter au lancement
+ENTRYPOINT ["python", "1_rabbit_to_minio.py"]
+
+

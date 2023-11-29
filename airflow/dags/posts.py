@@ -40,10 +40,17 @@ def post():
         body=message
     )
 
+    channel.queue_declare(queue='posts_to_mongodb')
+    channel.basic_publish(
+        exchange='',
+        routing_key='posts_to_mongodb',
+        body=message
+    )
+
 
 with DAG(
     dag_id="DAG_stackexchange_posts",
-    schedule=timedelta(seconds=10),
+    schedule=timedelta(seconds=20),
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
     is_paused_upon_creation=False,
     catchup=False,

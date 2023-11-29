@@ -20,19 +20,25 @@ services:
   rabbitmq-to-minio:
     build:
       context: .
-      dockerfile: ./src/Dockerfile
+      dockerfile: ./src/Dockerfile.minio
     depends_on:
       - rabbitmq
       - minio
 
-
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
-    environment:
-      - discovery.type=single-node
-      - ELASTICSEARCH_USERNAME=azerty
-      - ELASTICSEARCH_PASSWORD=azerty
+  mongodb:
+    image: mongo:latest
+    hostname: mongodb
     ports:
-      - 9200:9200
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: tpNoSQL
 
+  rabbitmq-to-mongodb:
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile.mongodb
+    depends_on:
+      - rabbitmq
+      - mongodb
