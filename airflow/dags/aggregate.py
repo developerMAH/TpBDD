@@ -135,7 +135,7 @@ def aggregate_data():
         {
             "$group": {
                 "_id": None,
-                "avg_score": {"$avg": {"$toDouble": "$@Score"}}  # Convert Score to double before calculating average
+                "avg_score": {"$avg": {"$toDouble": "$@Score"}}
             }
         }
     ]
@@ -175,7 +175,7 @@ def aggregate_data():
         print("Successfully inserted into BigQuery (avg_score_per_posts)")
 
     '''
-        ***************** Nombre total de vues par année de publication  *****************
+        ***************** Nombre total de publications par année  *****************
     '''
     # Agrégation du nombre total de publications par année
     pipeline_total_posts_per_year = [
@@ -264,7 +264,7 @@ def aggregate_data():
         },
         {
             "$match": {
-                "_id": {"$regex": "\\w{3,}"}  # Filtre pour les mots de longueur >3
+                "_id": {"$regex": "\\w{3,}"} 
             }
         },
         {

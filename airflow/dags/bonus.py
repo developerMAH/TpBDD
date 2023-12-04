@@ -1,6 +1,7 @@
 import pendulum
 import logging
 import json
+import random
 from datetime import timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -9,16 +10,14 @@ from google.cloud import bigquery
 log = logging.getLogger(__name__)
 
 def read_badges_and_push_to_bq():
-
-    print("**************1")
     # Read data from Badges.json
     data_filepath = "./data/Badges.json"
     with open(data_filepath, "r") as f:
         content = f.read()
         badges_data = json.loads(content)
 
-    # Limit to the first 100 rows
-    badges_data = badges_data[:100]
+    # Limit to the first 50 rows
+    random_badges_data = random.sample(badges_data, min(50, len(badges_data)))
 
     # Authenticate with BigQuery
     client = bigquery.Client.from_service_account_json("./data/service_account.json")
@@ -35,9 +34,8 @@ def read_badges_and_push_to_bq():
             bigquery.SchemaField("Class", "STRING"),
             bigquery.SchemaField("TagBased", "BOOLEAN"),
         ],
-        write_disposition="WRITE_TRUNCATE",
+        write_disposition="WRITE_APPEND",
     )
-    print("**************2")
 
     # Convert the data into a list of dictionaries
     rows_to_insert = [
@@ -49,10 +47,8 @@ def read_badges_and_push_to_bq():
             "Class": entry["@Class"],
             "TagBased": entry["@TagBased"] == "True",
         }
-        for entry in badges_data
+        for entry in random_badges_data
     ]
-
-    print("**************3")
 
     table_ref_per_post = client.dataset(dataset_id).table(table_id)
     table_per_post = client.get_table(table_ref_per_post)
@@ -70,24 +66,19 @@ def read_badges_and_push_to_bq():
         SELECT Name, COUNT(*) as Count
         FROM `{client.project}.{dataset_id}.{table_id}`
         GROUP BY Name
+        ORDER BY Count DESC
     """
 
     # Run the query and fetch the results
     query_job = client.query(query)
     results = query_job.result()
 
-    
-
     # Convert the results into a list of dictionaries
     aggregation_rows = [
         {"Name": row["Name"], "total_badges": row["Count"]} for row in results
     ]
 
-    print(aggregation_rows)
-
-    print("***********5")
     # Configure the job to write to the aggregation table
-
     aggregation_table_id = "badges_aggregations"
     aggregation_job_config = bigquery.LoadJobConfig(
         schema=[
@@ -97,7 +88,6 @@ def read_badges_and_push_to_bq():
         write_disposition="WRITE_TRUNCATE",
     )
 
-    print("***********6")
     # Load data into the aggregation table
     aggregation_table_ref = client.dataset(dataset_id).table(aggregation_table_id)
     aggregation_table = client.get_table(aggregation_table_ref)
@@ -113,7 +103,7 @@ def read_badges_and_push_to_bq():
 # Define the DAG
 with DAG(
     dag_id="DAG_badges_data",
-    schedule_interval=timedelta(minutes=30),
+    schedule_interval=timedelta(minutes=1),
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
     is_paused_upon_creation=False,
     catchup=False,
